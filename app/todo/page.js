@@ -4,42 +4,64 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 const fetchTodos = async () => {
-  const res = await fetch('/api/todos');
-  const data = await res.json();
-  return data.data;
+  try {
+    const res = await fetch('/api/todos');
+    if (!res.ok) throw new Error('Failed to fetch tasks');
+    const data = await res.json();
+    return data.data;
+  } catch (error) {
+    console.error(error);
+    return [];
+  }
 };
 
 const createTodo = async (title) => {
-  if (!title || typeof title !== "string" || title.trim() === "") {
-    console.error("Invalid title input");
-    return;
+  try {
+    if (!title || typeof title !== "string" || title.trim() === "") {
+      throw new Error("Invalid title input");
+    }
+
+    const res = await fetch('/api/todos', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title: title.trim() }),
+    });
+
+    if (!res.ok) throw new Error('Failed to create task');
+
+    return res.json();
+  } catch (error) {
+    console.error(error);
   }
-
-  const res = await fetch('/api/todos', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ title: title.trim() }), // Ensure it's a non-empty string
-  });
-
-  return res.json();
 };
 
-
 const updateTodo = async ({ id, title, isCompleted }) => {
-  const res = await fetch('/api/todos', {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ id, title, isCompleted }),
-  });
-  return res.json();
+  try {
+    const res = await fetch(`/api/todos/${id}`, {  // Changed to include `id` in URL
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title, isCompleted }),
+    });
+
+    if (!res.ok) throw new Error('Failed to update task');
+
+    return res.json();
+  } catch (error) {
+    console.error(error);
+  }
 };
 
 const deleteTodo = async (id) => {
-  await fetch('/api/todos', {
-    method: 'DELETE',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ id }),
-  });
+  try {
+    const res = await fetch(`/api/todos/${id}`, {  // Changed to include `id` in URL
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+    });
+
+    if (!res.ok) throw new Error('Failed to delete task');
+  } catch (error) {
+    console.error(error);
+  }
 };
 
 function TodoApp() {
@@ -56,17 +78,23 @@ function TodoApp() {
 
   const createTodoMutation = useMutation({
     mutationFn: createTodo,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['todos'] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['todos'] });
+    },
   });
 
   const updateTodoMutation = useMutation({
     mutationFn: updateTodo,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['todos'] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['todos'] });
+    },
   });
 
   const deleteTodoMutation = useMutation({
     mutationFn: deleteTodo,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['todos'] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['todos'] });
+    },
   });
 
   const handleCreateTodo = (e) => {
@@ -82,7 +110,8 @@ function TodoApp() {
   };
 
   const handleSaveEdit = (id, isCompleted) => {
-    updateTodoMutation.mutate({ id, title: editTitle, isCompleted });
+    if (!editTitle.trim()) return;
+    updateTodoMutation.mutate({ id, title: editTitle.trim(), isCompleted });
     setEditId(null);
   };
 
