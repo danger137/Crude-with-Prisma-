@@ -35,34 +35,44 @@ const createTodo = async (title) => {
   }
 };
 
-const updateTodo = async ({ id, title, isCompleted }) => {
+const updateTodo = async ({ id, title }) => {
   try {
-    const res = await fetch(`/api/todos/${id}`, {  // Changed to include `id` in URL
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ title, isCompleted }),
+    const res = await fetch(`/api/todos/${id}`, {  // ✅ Corrected route
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ title }),
     });
 
-    if (!res.ok) throw new Error('Failed to update task');
+    if (!res.ok) {
+      throw new Error(`Failed to update task: ${res.status}`);
+    }
 
-    return res.json();
+    return await res.json();
   } catch (error) {
-    console.error(error);
+    console.error("Error updating todo:", error);
   }
 };
+
+
+
+
 
 const deleteTodo = async (id) => {
   try {
-    const res = await fetch(`/api/todos/${id}`, {  // Changed to include `id` in URL
-      method: 'DELETE',
-      headers: { 'Content-Type': 'application/json' },
+    const res = await fetch(`/api/todos/${id}`, { // ✅ Correct API route
+      method: "DELETE",
     });
 
-    if (!res.ok) throw new Error('Failed to delete task');
+    if (!res.ok) {
+      throw new Error(`Failed to delete task: ${res.status}`);
+    }
+
+    return await res.json();
   } catch (error) {
-    console.error(error);
+    console.error("Error deleting todo:", error);
   }
 };
+
 
 function TodoApp() {
   const [newTodoTitle, setNewTodoTitle] = useState('');
